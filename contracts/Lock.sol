@@ -18,6 +18,7 @@ contract Claim is ERC20, Ownable {
 }
 
 contract Pool {
+
     using SafeERC20 for Claim;
 
     uint256 startDate;
@@ -28,6 +29,11 @@ contract Pool {
     address oracleAddress;
 
     uint256 decayFactor;
+
+    // address decayAddress;
+    // address capitalfactorAddress;
+    // uint256 capitalFactor;
+
     uint256 minRatio;
     uint256 minRatioDate;
 
@@ -42,7 +48,17 @@ contract Pool {
     Claim public positiveSide;
     Claim public negativeSide;
 
+    event ClaimsCreated(address POS, address NEG);
+
     AggregatorV3Interface public oracle;
+
+    function getDepNumPOS() public view returns (uint256){
+        return(numDepPos);
+    }
+
+    function getDepNumNEG() public view returns (uint256){
+        return(numDepNeg);
+    }
 
     function getCurrentRatio() public view returns (uint256){
         return(numDepPos/numDepNeg);
@@ -55,34 +71,15 @@ contract Pool {
         return(withdraw);
     }
 
-    function getOracleAddress() public view returns (address){
-        return(oracleAddress);
-    }
-    function getSettlementPrice() public view returns (int256){
-        return(price);
-    }
-
-    function getSettlementDate() public view returns (uint256){
-        return(settlementDate);
-    }
     function pastSettlementDate() public view returns (bool){
         return(block.timestamp > settlementDate);
-    }
-    function getMinRatioDate() public view returns (uint256){
-        return(minRatioDate);
-    }
-
-    function getDecayFactor() public view returns (uint256){
-        return(decayFactor);
-    }
-    function getMinRatio() public view returns (uint256){
-        return(minRatio);
     }
 
     function getDiscountedValue() public view returns (uint256){
         uint256 temp = block.timestamp - startDate;
-        uint256 dividedDecay = (decayFactor/100);
-        uint256 end = ((temp*dividedDecay)/86400);
+        //uint256 dividedDecay = (decayFactor/100);
+        uint256 end = ((temp*decayFactor)/86400);
+
         uint256 tots = 1-end;
         return(tots);
     }
@@ -117,6 +114,8 @@ contract Pool {
 
         positiveSide = new Claim(Over,PAC);
         negativeSide = new Claim(Under,NAC);
+
+        emit ClaimsCreated(address(positiveSide), address(negativeSide));
 
         condition = false;
 
@@ -171,6 +170,7 @@ contract Pool {
 
     function turnWithdrawOn() public {
         require(block.timestamp < minRatioDate, "pd");
+        require(PosAmtDeposited[msg.sender] > 0 ||  NegAmtDeposited[msg.sender] > 0, "yn");
         if(minRatio < (numDepPos/numDepNeg)){
             withdraw = true;
         }
@@ -189,7 +189,7 @@ contract Pool {
         (payable(msg.sender)).transfer(saved);
     }
 
-    function redeenWithNEG() public {
+    function redeemWithNEG() public {
         require(withdraw == false,"rnf");
         require(block.timestamp > settlementDate, "te");
         require(condition == false,"cn");
@@ -221,22 +221,22 @@ contract Pool {
 
 contract deploy {
     event PoolCreated(address _oracle, 
-    int256 _price, uint256 _settlementDate,
-    uint256 decay,uint256 minRatio,
-    uint256 minRatioDate,string name,
-    string acronym,address poolAddress);
+        int256 _price, uint256 _settlementDate,
+        uint256 decay,uint256 minRatio,
+        uint256 minRatioDate,string name,
+        string acronym,address poolAddress);
 
     function createPool(address oracle, int256 price, 
-    uint256 settlementDate,uint256 decay,
-    uint256 minRatio,uint256 minRatioDate,
-    string memory name,string memory acronym ) 
+        uint256 settlementDate,uint256 decay,
+        uint256 minRatio,uint256 minRatioDate,
+        string memory name,string memory acronym ) 
     
-    public returns (address newPool)
-    {
-        newPool = address(new Pool(oracle,price,settlementDate,decay,minRatio,minRatioDate,name,acronym));
-        emit PoolCreated(oracle,price,settlementDate,decay,minRatio,minRatioDate,name,acronym,newPool);
-        return(newPool);
-    }
+            public returns (address newPool)
+            {
+                newPool = address(new Pool(oracle,price,settlementDate,decay,minRatio,minRatioDate,name,acronym));
+                emit PoolCreated(oracle,price,settlementDate,decay,minRatio,minRatioDate,name,acronym,newPool);
+                return(newPool);
+            }
 }
 
 
