@@ -172,6 +172,7 @@ contract Pool {
     function turnWithdrawOn() public {
         require(block.timestamp < minRatioDate, "pd");
         require(PosAmtDeposited[msg.sender] > 0 ||  NegAmtDeposited[msg.sender] > 0, "yn");
+        require(minRatio < (numDepPos/numDepNeg), "CNS");
         if(minRatio < (numDepPos/numDepNeg)){
             withdraw = true;
         }
@@ -209,6 +210,9 @@ contract Pool {
 
         positiveSide.safeTransferFrom(msg.sender,address(this),positiveSide.balanceOf(msg.sender));
         (payable(msg.sender)).transfer(PosAmtDeposited[msg.sender]);
+        
+        numDepPos = numDepPos - PosAmtDeposited[msg.sender];
+        PosAmtDeposited[msg.sender] = 0;
     }
 
     function withdrawWithNEG() public {
@@ -217,6 +221,9 @@ contract Pool {
 
         negativeSide.safeTransferFrom(msg.sender,address(this),negativeSide.balanceOf(msg.sender));
         (payable(msg.sender)).transfer(NegAmtDeposited[msg.sender]);
+
+        numDepNeg = numDepNeg - NegAmtDeposited[msg.sender];
+        NegAmtDeposited[msg.sender] = 0;
     }
 }
 
