@@ -1,0 +1,14 @@
+
+ideas:
+
+decay --> oracle 
+--> need to be able to create own oracles  
+
+Incentive --> 
+--> also can incentivize larger deposits , also oracle possibility. 
+
+Destruction date 
+    --> make it so after a date, contract can be called to self destruct
+        --> contract will send all ETH to certain address (I may own it)
+        --> and also clean up the ERC20s it created. 
+
